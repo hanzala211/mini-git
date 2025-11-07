@@ -39,7 +39,7 @@ The `commit` command creates a commit object from the staged files in the index.
 Example usage:
 
 ```bash
-mini-git commit -m "Initial commit"
+mini-git commit --m "Initial commit"
 ```
 
 ### Branching
