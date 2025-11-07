@@ -114,6 +114,14 @@ func CommitCommand(cmd *cobra.Command, args []string) {
 	if index == nil  {
 		log.Fatal("no changes to commit")
 	}
+	
+	for filePath := range index {
+		fullPath := filepath.Join(repoPath, filePath)
+		if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+			delete(index, filePath)
+		}
+	}
+	
 	treeSha, err := buildTree(repoPath, index)
 	if err != nil {
 		log.Fatalf("failed to build trees: %w", err)
