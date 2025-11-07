@@ -39,6 +39,25 @@ var commitCmd = &cobra.Command{
 	},
 }
 
+var branchCmd = &cobra.Command{
+	Use: "branch",
+	Short: "List and Create New Branches",
+	Long: "List and Create New Branches",
+	Run: func(cmd *cobra.Command, args []string) {
+		commands.BranchCommand(cmd, args)
+	},
+}
+
+var checkoutCmd = &cobra.Command{
+	Use: "checkout",
+	Short: "Switch to a different branch",
+	Long: "Switch to a different branch and update the working directory",
+	Args: cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		commands.CheckoutCommand(cmd, args)
+	},
+}
+
 func main() {
 
 	commitCmd.Flags().String("m", "", "message for the commit (required)")
@@ -46,5 +65,7 @@ func main() {
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(addCmd)
 	rootCmd.AddCommand(commitCmd)
+	rootCmd.AddCommand(branchCmd)
+	rootCmd.AddCommand(checkoutCmd)
 	rootCmd.Execute()
 }
