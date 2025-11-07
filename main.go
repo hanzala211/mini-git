@@ -30,8 +30,21 @@ var addCmd = &cobra.Command{
 	},
 }
 
+var commitCmd = &cobra.Command{
+	Use: "commit",
+	Short: "Commit the staged changes",
+	Long: "Commit the staged changes to the repository",
+	Run: func(cmd *cobra.Command, args []string) {
+		commands.CommitCommand(cmd, args)
+	},
+}
+
 func main() {
+
+	commitCmd.Flags().String("m", "", "message for the commit (required)")
+
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(addCmd)
+	rootCmd.AddCommand(commitCmd)
 	rootCmd.Execute()
 }

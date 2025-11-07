@@ -5,6 +5,7 @@ import (
 	"compress/zlib"
 	"crypto/sha1"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 )
@@ -38,4 +39,28 @@ func WriteObject(repoRoot string,content []byte, fileType string, filePath strin
 		fmt.Print(fmt.Sprintln("adding file", filePath))
 	}
 	return stringHash, nil
+}
+
+func ReadObject(repoRoot string, objectSha string) ([]byte, error) {
+	folderDir := filepath.Join(repoRoot, RootDir, ObjectDir, objectSha[:2])
+	fileDir := filepath.Join(folderDir, objectSha[2:])
+	content, err := os.ReadFile(fileDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read object: %w", err)
+	}
+	zr, err := zlib.NewReader(bytes.NewReader(content))
+	if err != nil {
+		return nil, fmt.Errorf("failed to start reader: %w", err)
+	}
+	decompressedData, err := io.ReadAll(zr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read decompressed data: %w", err)
+	}
+	defer zr.Close()
+	// Strip the header (format: "commit <size>\x00" or "tree <size>\x00" etc.)
+	nullIndex := bytes.IndexByte(decompressedData, '\x00')
+	if nullIndex == -1 {
+		return nil, fmt.Errorf("invalid object format: missing null byte")
+	}
+	return decompressedData[nullIndex+1:], nil // +1 because we want to skip the \x00
 }

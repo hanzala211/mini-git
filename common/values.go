@@ -13,3 +13,9 @@ var (
 )
 
 type Index map[string]string
+
+type TreeNode struct {
+	Sha  string
+	Name string
+	Mode string
+}
