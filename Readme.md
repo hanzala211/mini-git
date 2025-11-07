@@ -34,7 +34,7 @@ The `add` command lets you stage files (or entire directories) for commit. It re
 
 ### Committing Changes
 
-The `commit` command creates a commit object from the staged files in the index. You must provide a commit message using the `-m` or `--m` flag. The command builds a tree structure from the staged files, creates a commit object that references the tree, parent commit (if any), commit message, and timestamp. After creating the commit, it updates HEAD to point to the new commit SHA.
+The `commit` command creates a commit object from the staged files in the index. You must provide a commit message using the `--m` flag. The command builds a tree structure from the staged files, creates a commit object that references the tree, parent commit (if any), commit message, and timestamp. After creating the commit, it updates HEAD to point to the new commit SHA.
 
 Example usage:
 
