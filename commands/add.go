@@ -40,6 +40,11 @@ func AddCommand(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	gitDir, err := filepath.Abs(filepath.Join(repoPath, ".git"))// find the absolute path to git dir to skip it during 
+	// recursive walk
+	if err != nil {
+		log.Fatal(err)
+	}
 	indexBytes, err := os.ReadFile(filepath.Join(repoPath, common.RootDir, common.IndexFile))
 	if err != nil {
 		log.Fatal("Failed to read index")
@@ -59,7 +64,7 @@ func AddCommand(cmd *cobra.Command, args []string) {
 					return err // Handle error from walking
 				}
 				absPath, _ := filepath.Abs(path)
-				if info.IsDir() && absPath == minigitDir {
+				if info.IsDir() && (absPath == minigitDir || absPath == gitDir) {
 					return filepath.SkipDir
 				}
 

@@ -1,5 +1,6 @@
 {
-  "commands/add.go": "08f7fa8d2102da25e44cc585670d7ffb941c9cd9",
+  "Readme.md": "14ddaaa47c42b6f6a91fb2a6892a6bd8c73f3112",
+  "commands/add.go": "cfe292e62900523fd4b030bd07309a749bec73c5",
   "commands/init.go": "bcae3d63a9bb451a113f07f7a5a87f521097cf34",
   "common/find.go": "e955dfb4592c0372448aa3d06d69fc829abf8957",
   "common/object.go": "e35835908a3cfec0e243e5cf30866baba2ffaf44",
