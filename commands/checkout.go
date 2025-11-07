@@ -1,6 +1,9 @@
 package commands
 
 import (
+	"bytes"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -10,43 +13,190 @@ import (
 	"github.com/hanzalaoc211/mini-git/common"
 	"github.com/spf13/cobra"
 )
-
-func restoreTreeFiles(repoRoot string, treeSha string) {
-	treeData, err := common.ReadObject(repoRoot, treeSha)
-	if err != nil{
-		log.Fatalf("failed to read tree: %v", err)
-	}
-	treeDataStr := string(treeData)
-	fmt.Println(treeDataStr)
+type TreeEntry struct {
+	Mode string
+	SHA  string
 }
 
-func switchBranch(repoRoot string, branchPath string, currentBranch string) {
-	content, err := os.ReadFile(branchPath)
+func parseTreeToMap(treeData []byte) (map[string]TreeEntry, error) {
+	entries := map[string]TreeEntry{}
+	i := 0
+	for i < len(treeData) {
+		spaceIndex := bytes.IndexByte(treeData[i:], ' ')
+		if spaceIndex == -1 {
+			return nil, errors.New("invalid tree data")
+		}
+		mode := string(treeData[i : i + spaceIndex]) // get the mode
+		fileNamStart := i + spaceIndex + 1 // +1 because we want to skip the space
+
+		nullIndex := bytes.IndexByte(treeData[fileNamStart:], '\x00')
+		if nullIndex == -1 {
+			return nil, errors.New("invalid tree data")
+		}
+		fullNullIndex := fileNamStart + nullIndex
+		fileName := string(treeData[fileNamStart : fullNullIndex]) // get the file name
+		shaStart := fullNullIndex + 1
+		shaEnd := shaStart + 20
+		sha := treeData[shaStart : shaEnd] // get the sha
+		entries[fileName] = TreeEntry{
+			Mode: mode,
+			SHA: hex.EncodeToString(sha),
+		}
+		i = shaEnd
+	}
+	return entries, nil
+}
+
+func restoreFile(repoRoot string, blobSha string, filePath string)  {
+	blobData, err := common.ReadObject(repoRoot, blobSha)
+	if err != nil {
+		log.Fatalf("failed to read object in restoreFile: %v", err)
+	}
+	if err := os.WriteFile(filePath, blobData, 0644); err != nil {
+		log.Fatalf("failed to write file: %v", err)
+	}
+}
+
+func restoreFullTree(repoRoot string, treeSha string, currentPath string) {
+	treeData, err := common.ReadObject(repoRoot, treeSha)
+	if err != nil {
+		log.Fatalf("failed to read object in restoreFullTree: %v", err)
+	}
+	i := 0
+	for i < len(treeData) {
+		spaceIndex := bytes.IndexByte(treeData[i:], ' ')
+		if spaceIndex == -1 {
+			log.Fatalf("invalid tree data")
+		}
+		mode := string(treeData[i : i + spaceIndex]) // get the mode
+		fileNamStart := i + spaceIndex + 1 // +1 because we want to skip the space
+
+		nullIndex := bytes.IndexByte(treeData[fileNamStart:], '\x00')
+		if nullIndex == -1 {
+			log.Fatalf("invalid tree data")
+		}
+		fullNullIndex := fileNamStart + nullIndex
+		fileName := string(treeData[fileNamStart : fullNullIndex]) // get the file name
+		shaStart := fullNullIndex + 1
+		shaEnd := shaStart + 20
+		sha := treeData[shaStart : shaEnd] // get the sha
+		i = shaEnd
+		if mode == "040000" {
+			if err := os.MkdirAll(filepath.Join(currentPath, fileName), 0755); err != nil {
+				log.Fatalf("failed to create directory: %v", err)
+			}
+			restoreFullTree(repoRoot, hex.EncodeToString(sha), filepath.Join(currentPath, fileName))
+		}else {
+			restoreFile(repoRoot, hex.EncodeToString(sha), filepath.Join(currentPath, fileName))
+		}
+	}
+}
+
+func diffAndApply(repoRoot string, newTreeSha string, oldTreeSha string) {
+	var oldEntries map[string]TreeEntry
+	if oldTreeSha != "" {
+		oldTreeData, err := common.ReadObject(repoRoot, oldTreeSha)
+		if err != nil {
+			log.Fatalf("failed to read object in diffAndApply: %v", err)
+		}
+		oldEntries, err = parseTreeToMap(oldTreeData)
+		if err != nil {
+			log.Fatalf("failed to parse tree: %v", err)
+		}
+	}else {
+		oldEntries = make(map[string]TreeEntry)
+	}
+
+
+	newTreeData, err := common.ReadObject(repoRoot, newTreeSha)
+	if err != nil {
+		log.Fatalf("failed to read object in diffAndApply second: %v", err)
+	}
+	newEntries, err := parseTreeToMap(newTreeData)
+	if err != nil {
+		log.Fatalf("failed to parse tree: %v", err)
+	}
+
+	for filename, newEntry := range newEntries {
+		fullPath := filepath.Join(repoRoot, filename)
+		if oldEntry, exists := oldEntries[filename]; exists {
+			if oldEntry.SHA == newEntry.SHA { // not modified ignore it
+				continue
+			}
+			// SHAS are different modify the file
+			if err := os.RemoveAll(fullPath); err != nil {
+				log.Fatalf("failed to remove file: %v", err)
+			}
+			if newEntry.Mode == "040000" {
+				restoreFullTree(repoRoot, newEntry.SHA, fullPath)
+			}else {
+				restoreFile(repoRoot, newEntry.SHA, fullPath)
+			}
+		}else {
+			if newEntry.Mode == "040000" {
+				if err := os.MkdirAll(fullPath, 0755); err != nil {
+					log.Fatalf("failed to create directory: %v", err)
+				}
+				restoreFullTree(repoRoot, newEntry.SHA, fullPath)
+			}else {
+				restoreFile(repoRoot, newEntry.SHA, fullPath)
+			}
+		}
+	}
+
+	for filename, _ := range oldEntries {
+		if _, exists := newEntries[filename]; !exists {
+			if err := os.RemoveAll(filepath.Join(repoRoot, filename)); err != nil {
+				log.Fatalf("failed to remove file: %v", err)
+			}
+		}
+	}
+} 
+
+func switchBranch(repoRoot string, newBranchPath string, currentBranch string) {
+	content, err := os.ReadFile(newBranchPath)
 	if err != nil {
 		log.Fatalf("failed to read branch: %v", err)
 	}	
 	contentStr := string(content)
 	contentStr = strings.TrimSpace(contentStr)
+	currentBranchContent, err := os.ReadFile(filepath.Join(repoRoot, common.RootDir, common.RefsDir, common.HeadDir, currentBranch))
+	currentBranchContentStr := strings.TrimSpace(string(currentBranchContent))
+	if currentBranchContentStr == contentStr {
+		return
+	}
 	if contentStr == "" {
-		currentBranchContent, err := os.ReadFile(filepath.Join(repoRoot, common.RootDir, common.RefsDir, common.HeadDir, currentBranch))
 		if err != nil {
 			log.Fatalf("failed to read current branch: %v", err)
 		}
-		os.WriteFile(branchPath, currentBranchContent, 0644)
+		os.WriteFile(newBranchPath, currentBranchContent, 0644)
+		return
 	}
-	commitData, err := common.ReadObject(repoRoot, contentStr)
+	newCommitData, err := common.ReadObject(repoRoot, contentStr)
 	if err != nil {
-		log.Fatalf("failed to read object: %v", err)
+		log.Fatalf("failed to read object in switchBranch: %v", err)
 	}
-	commitDataStr := string(commitData)
-	commitDataStr = strings.TrimSpace(commitDataStr)
-	if commitDataStr == "" {
-		log.Fatalf("branch %s is not a valid branch", branchPath)
+	newCommitDataStr := string(newCommitData)
+	newCommitDataStr = strings.TrimSpace(newCommitDataStr)
+	if newCommitDataStr == "" {
+		log.Fatalf("branch %s is not a valid branch", newBranchPath)
 	}
-	treeSha := strings.Split(commitDataStr, "\n")[0]
-	treeSha = strings.Split(treeSha, " ")[1]
-	treeSha = strings.TrimSpace(treeSha)
-	restoreTreeFiles(repoRoot, treeSha)
+	newTreeSha := strings.Split(newCommitDataStr, "\n")[0]
+	newTreeSha = strings.Split(newTreeSha, " ")[1]
+	newTreeSha = strings.TrimSpace(newTreeSha)
+	oldCommitData, err := common.ReadObject(repoRoot, currentBranchContentStr)
+	if err != nil {
+		log.Fatalf("failed to read object in switchBranch second: %v", err)
+	}
+	oldCommitDataStr := string(oldCommitData)
+	oldCommitDataStr = strings.TrimSpace(oldCommitDataStr)
+	if oldCommitDataStr == "" {
+		log.Fatalf("branch %s is not a valid branch", newBranchPath)
+	}
+	oldTreeSha := strings.Split(oldCommitDataStr, "\n")[0]
+	oldTreeSha = strings.Split(oldTreeSha, " ")[1]
+	oldTreeSha = strings.TrimSpace(oldTreeSha)
+	diffAndApply(repoRoot, newTreeSha, oldTreeSha)
 }
 
 

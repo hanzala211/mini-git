@@ -1,6 +1,6 @@
 # Mini-Git
 
-A simple Git clone built in Go. We're building this to understand how version control systems work under the hood.
+A simple Git clone built in Go. I'm building this to understand how version control systems work under the hood.
 
 ## Installation
 
@@ -12,21 +12,21 @@ go install github.com/hanzalaoc211/mini-git@latest
 
 ## The `mini-git` Command
 
-Everything starts with the `mini-git` command. It's built using Cobra, so it follows a similar structure to Git with subcommands. Right now we have `init`, `add`, and `commit`.
+Everything starts with the `mini-git` command. It's built using Cobra, so it follows a similar structure to Git with subcommands. Right now I have `init`, `add`, `commit`, `branch`, and `checkout`.
 
-## What We've Built So Far
+## What I've Built So Far
 
 ### Repository Management
 
-When you run `mini-git init`, it sets up a `.minigit` folder in your project. Inside, we create:
+When you run `mini-git init`, it sets up a `.minigit` folder in your project. Inside, I create:
 
-- An `objects` directory where we store all your files (compressed and hashed)
-- An `index.json` file that acts as our staging area
+- An `objects` directory where I store all your files (compressed and hashed)
+- An `index.json` file that acts as my staging area
 - Basic branch references with a `HEAD` file pointing to `master`
 
-### How We Store Files
+### How I Store Files
 
-Files get turned into blob objects using SHA1 hashing, then compressed with zlib before being saved. We store them in a two-level directory structure (`objects/XX/YYYY...`) just like Git does. This means if you add the same file twice, we only store it once - the hash tells us it's already there.
+Files get turned into blob objects using SHA1 hashing, then compressed with zlib before being saved. I store them in a two-level directory structure (`objects/XX/YYYY...`) just like Git does. This means if you add the same file twice, I only store it once - the hash tells me it's already there.
 
 ### Staging Files
 
@@ -42,11 +42,48 @@ Example usage:
 mini-git commit -m "Initial commit"
 ```
 
-### Working
+### Branching
+
+The `branch` command lets you create and list branches. When you run `mini-git branch` without arguments, it lists all available branches with an asterisk marking the current one. When you provide a branch name, it creates a new branch pointing to the current commit and automatically switches to it.
+
+Example usage:
+
+```bash
+# List all branches
+mini-git branch
+
+# Create and switch to a new branch
+mini-git branch feature-branch
+```
+
+### Checkout (This is a Must!)
+
+The `checkout` command is essential for switching between branches. When you switch branches, it compares the tree objects of the current branch and the target branch, then updates your working directory accordingly. It handles:
+
+- **Modified files**: Files that changed between branches get updated
+- **New files**: Files that exist in the target branch but not in the current one get created
+- **Deleted files**: Files that exist in the current branch but not in the target one get removed
+- **Unchanged files**: Files with the same SHA are left untouched (smart, right?)
+
+The command also updates the HEAD reference to point to the new branch. If you try to checkout the branch you're already on, it just tells you that you're already there.
+
+Example usage:
+
+```bash
+mini-git checkout feature-branch
+```
+
+### What's Working
 
 - **Initialization**: Create a new repository with a `.minigit` directory structure
 - **Object Storage**: Files are stored as compressed (zlib) blob objects with SHA1 hashing
 - **Index System**: A JSON-based staging area that tracks files and their object hashes
 - **Tree Objects**: Directory structures are represented as tree objects that reference blob and other tree objects
 - **Commit Objects**: Commits store references to tree objects, parent commits, commit messages, and timestamps
-- **Branch References**: Basic branch reference system with HEAD tracking that updates on each commit
+- **Branch References**: Branch reference system with HEAD tracking that updates on each commit
+- **Branch Management**: Create and list branches, with automatic switching on creation
+- **Checkout**: Switch between branches with intelligent working directory updates
+
+## What's Next
+
+I'm planning to add `merge`, `status`, and `log` commands next. These will complete the core workflow and make this a fully functional version control system!
