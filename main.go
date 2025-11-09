@@ -58,6 +58,16 @@ var checkoutCmd = &cobra.Command{
 	},
 }
 
+var mergeCmd = &cobra.Command{
+	Use: "merge",
+	Short: "Merge a branch into the current branch",
+	Long: "Merge another branch into the current branch",
+	Args: cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		commands.MergeCommand(cmd, args)
+	},
+}
+
 func main() {
 
 	commitCmd.Flags().String("m", "", "message for the commit (required)")
@@ -67,5 +77,6 @@ func main() {
 	rootCmd.AddCommand(commitCmd)
 	rootCmd.AddCommand(branchCmd)
 	rootCmd.AddCommand(checkoutCmd)
+	rootCmd.AddCommand(mergeCmd)
 	rootCmd.Execute()
 }

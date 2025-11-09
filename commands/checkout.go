@@ -157,7 +157,7 @@ func diffAndApply(repoRoot string, newTreeSha string, oldTreeSha string) {
 	fmt.Println(oldEntries, newEntries)
 }
 
-func switchBranch(repoRoot string, newBranchPath string, currentBranch string) {
+func switchBranch(repoRoot string, newBranchPath string, currentBranch string) { 
 	content, err := os.ReadFile(newBranchPath)
 	if err != nil {
 		log.Fatalf("failed to read branch: %v", err)
