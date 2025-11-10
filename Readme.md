@@ -7,7 +7,7 @@ A simple Git clone built in Go. I'm building this to understand how version cont
 Get it installed with:
 
 ```bash
-go install github.com/hanzalaoc211/mini-git@latest
+go install github.com/hanzala211/mini-git@latest
 ```
 
 ## The `mini-git` Command

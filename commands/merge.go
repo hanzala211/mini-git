@@ -17,7 +17,7 @@ func MergeCommand(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	currentBranch, err  := common.GetHeadRef(repoPath)
+	currentBranch, err := common.GetHeadRef(repoPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -58,12 +58,12 @@ func MergeCommand(cmd *cobra.Command, args []string) {
 			treeSha := strings.Split(commitStr, "\n")[0]
 			treeSha = strings.Split(treeSha, " ")[1]
 			treeSha = strings.TrimSpace(treeSha)
-			
+
 			newIndex, err := buildIndexFromTree(repoPath, treeSha, "")
 			if err != nil {
 				log.Fatalf("failed to build index from tree: %v", err)
 			}
-			
+
 			indexBytes, err := json.MarshalIndent(newIndex, "", "  ")
 			if err != nil {
 				log.Fatalf("failed to marshal index: %v", err)
