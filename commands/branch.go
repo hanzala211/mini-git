@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/hanzalaoc211/mini-git/common"
+	"github.com/hanzala211/mini-git/common"
 	"github.com/spf13/cobra"
 )
 
@@ -22,7 +22,7 @@ func listBranches(repoRoot string) {
 	for _, entry := range entries {
 		if entry.Name() == currentBranch {
 			fmt.Println("*", entry.Name())
-		}else {
+		} else {
 			fmt.Println(entry.Name())
 		}
 	}
@@ -41,7 +41,7 @@ func createBranch(repoRoot string, branchName string) {
 		log.Fatalf("failed to create branch %s: %v", branchName, err)
 	}
 	headPath := filepath.Join(repoRoot, common.RootDir, common.HEAD)
-	err = os.WriteFile(headPath, []byte("ref: refs/heads/" + branchName), 0644)
+	err = os.WriteFile(headPath, []byte("ref: refs/heads/"+branchName), 0644)
 	if err != nil {
 		log.Fatalf("failed to update head: %v", err)
 	}
@@ -55,7 +55,7 @@ func BranchCommand(cmd *cobra.Command, args []string) {
 	}
 	if len(args) == 0 {
 		listBranches(repoPath)
-	}else {
+	} else {
 		createBranch(repoPath, args[0])
 	}
 }

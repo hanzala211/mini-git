@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/hanzalaoc211/mini-git/common"
+	"github.com/hanzala211/mini-git/common"
 	"github.com/spf13/cobra"
 )
 

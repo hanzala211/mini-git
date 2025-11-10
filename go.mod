@@ -1,4 +1,4 @@
-module github.com/hanzalaoc211/mini-git
+module github.com/hanzala211/mini-git
 
 go 1.24.3
 

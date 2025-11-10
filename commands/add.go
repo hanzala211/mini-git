@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/hanzalaoc211/mini-git/common"
+	"github.com/hanzala211/mini-git/common"
 	"github.com/spf13/cobra"
 )
 
@@ -35,12 +35,12 @@ func AddCommand(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	minigitDir, err := filepath.Abs(filepath.Join(repoPath, common.RootDir))// find the absolute path to minigit dir to skip it during 
+	minigitDir, err := filepath.Abs(filepath.Join(repoPath, common.RootDir)) // find the absolute path to minigit dir to skip it during
 	// recursive walk
 	if err != nil {
 		log.Fatal(err)
 	}
-	gitDir, err := filepath.Abs(filepath.Join(repoPath, ".git"))// find the absolute path to git dir to skip it during 
+	gitDir, err := filepath.Abs(filepath.Join(repoPath, ".git")) // find the absolute path to git dir to skip it during
 	// recursive walk
 	if err != nil {
 		log.Fatal(err)
@@ -51,7 +51,7 @@ func AddCommand(cmd *cobra.Command, args []string) {
 	}
 	var index common.Index
 	json.Unmarshal(indexBytes, &index)
-	
+
 	for _, pathArg := range args {
 		stat, err := os.Stat(pathArg)
 		if err != nil {
@@ -76,7 +76,7 @@ func AddCommand(cmd *cobra.Command, args []string) {
 			if err != nil {
 				log.Fatal(err)
 			}
-		}else { 
+		} else {
 			AddFileToIndex(repoPath, pathArg, index)
 		}
 	}

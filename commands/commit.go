@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hanzalaoc211/mini-git/common"
+	"github.com/hanzala211/mini-git/common"
 	"github.com/spf13/cobra"
 )
 
@@ -23,9 +23,9 @@ func buildTree(repoPath string, index common.Index) (string, error) {
 		paths := strings.Split(fullPath, "/")
 		currentFileTree := fileTree
 		for _, path := range paths {
-			if paths[len(paths) - 1] == path {
+			if paths[len(paths)-1] == path {
 				currentFileTree[path] = sha
-			}else {
+			} else {
 				if _, ok := currentFileTree[path]; !ok {
 					currentFileTree[path] = make(map[string]interface{})
 				}
@@ -45,16 +45,16 @@ func writeTreeRecursively(repoPath string, treeRoot map[string]interface{}) (str
 			treeArr = append(treeArr, common.TreeNode{
 				Name: name,
 				Mode: "100644", // file mode
-				Sha: sha,
+				Sha:  sha,
 			})
-		}else if childNode, ok := node.(map[string]interface{}); ok {
+		} else if childNode, ok := node.(map[string]interface{}); ok {
 			childNodeSha, err := writeTreeRecursively(repoPath, childNode)
 			if err != nil {
 				return "", err
 			}
 			treeArr = append(treeArr, common.TreeNode{
 				Name: name,
-				Sha: childNodeSha,
+				Sha:  childNodeSha,
 				Mode: "040000", // folder mode
 			})
 		}
@@ -111,17 +111,17 @@ func CommitCommand(cmd *cobra.Command, args []string) {
 	}
 	var index common.Index
 	json.Unmarshal(indexBytes, &index)
-	if index == nil  {
+	if index == nil {
 		log.Fatal("no changes to commit")
 	}
-	
+
 	for filePath := range index {
 		fullPath := filepath.Join(repoPath, filePath)
 		if _, err := os.Stat(fullPath); os.IsNotExist(err) {
 			delete(index, filePath)
 		}
 	}
-	
+
 	treeSha, err := buildTree(repoPath, index)
 	if err != nil {
 		log.Fatalf("failed to build trees: %w", err)
@@ -133,9 +133,9 @@ func CommitCommand(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatalf("failed to find last commit tree: %w", err)
 	}
-	
+
 	parentSha, err := common.GetParentSha(repoPath)
-	if err !=nil {
+	if err != nil {
 		log.Fatalf("failed to get parent commit: %w", err)
 	}
 
@@ -146,7 +146,7 @@ func CommitCommand(cmd *cobra.Command, args []string) {
 
 	fmt.Fprintf(&commitContent, "tree %s\n", treeSha)
 	if parentSha != "" {
-		fmt.Fprintf(&commitContent, "parent %s\n", parentSha) 
+		fmt.Fprintf(&commitContent, "parent %s\n", parentSha)
 	}
 	fmt.Fprintf(&commitContent, "\n%s\n", commitMsg)
 	fmt.Fprintf(&commitContent, "%s\n", timestamp)

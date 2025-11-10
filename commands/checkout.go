@@ -11,14 +11,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/hanzalaoc211/mini-git/common"
+	"github.com/hanzala211/mini-git/common"
 	"github.com/spf13/cobra"
 )
+
 type TreeEntry struct {
 	Mode string
 	SHA  string
 }
-
 
 func parseTreeToMap(treeData []byte) (map[string]TreeEntry, error) {
 	entries := map[string]TreeEntry{}
@@ -28,28 +28,28 @@ func parseTreeToMap(treeData []byte) (map[string]TreeEntry, error) {
 		if spaceIndex == -1 {
 			return nil, errors.New("invalid tree data")
 		}
-		mode := string(treeData[i : i + spaceIndex]) // get the mode
-		fileNamStart := i + spaceIndex + 1 // +1 because we want to skip the space
+		mode := string(treeData[i : i+spaceIndex]) // get the mode
+		fileNamStart := i + spaceIndex + 1         // +1 because we want to skip the space
 
 		nullIndex := bytes.IndexByte(treeData[fileNamStart:], '\x00')
 		if nullIndex == -1 {
 			return nil, errors.New("invalid tree data")
 		}
 		fullNullIndex := fileNamStart + nullIndex
-		fileName := string(treeData[fileNamStart : fullNullIndex]) // get the file name
+		fileName := string(treeData[fileNamStart:fullNullIndex]) // get the file name
 		shaStart := fullNullIndex + 1
 		shaEnd := shaStart + 20
-		sha := treeData[shaStart : shaEnd] // get the sha
+		sha := treeData[shaStart:shaEnd] // get the sha
 		entries[fileName] = TreeEntry{
 			Mode: mode,
-			SHA: hex.EncodeToString(sha),
+			SHA:  hex.EncodeToString(sha),
 		}
 		i = shaEnd
 	}
 	return entries, nil
 }
 
-func restoreFile(repoRoot string, blobSha string, filePath string)  {
+func restoreFile(repoRoot string, blobSha string, filePath string) {
 	blobData, err := common.ReadObject(repoRoot, blobSha)
 	if err != nil {
 		log.Fatalf("failed to read object in restoreFile: %v", err)
@@ -70,25 +70,25 @@ func restoreFullTree(repoRoot string, treeSha string, currentPath string) {
 		if spaceIndex == -1 {
 			log.Fatalf("invalid tree data")
 		}
-		mode := string(treeData[i : i + spaceIndex]) // get the mode
-		fileNamStart := i + spaceIndex + 1 // +1 because we want to skip the space
+		mode := string(treeData[i : i+spaceIndex]) // get the mode
+		fileNamStart := i + spaceIndex + 1         // +1 because we want to skip the space
 
 		nullIndex := bytes.IndexByte(treeData[fileNamStart:], '\x00')
 		if nullIndex == -1 {
 			log.Fatalf("invalid tree data")
 		}
 		fullNullIndex := fileNamStart + nullIndex
-		fileName := string(treeData[fileNamStart : fullNullIndex]) // get the file name
+		fileName := string(treeData[fileNamStart:fullNullIndex]) // get the file name
 		shaStart := fullNullIndex + 1
 		shaEnd := shaStart + 20
-		sha := treeData[shaStart : shaEnd] // get the sha
+		sha := treeData[shaStart:shaEnd] // get the sha
 		i = shaEnd
 		if mode == "040000" {
 			if err := os.MkdirAll(filepath.Join(currentPath, fileName), 0755); err != nil {
 				log.Fatalf("failed to create directory: %v", err)
 			}
 			restoreFullTree(repoRoot, hex.EncodeToString(sha), filepath.Join(currentPath, fileName))
-		}else {
+		} else {
 			restoreFile(repoRoot, hex.EncodeToString(sha), filepath.Join(currentPath, fileName))
 		}
 	}
@@ -105,7 +105,7 @@ func diffAndApply(repoRoot string, newTreeSha string, oldTreeSha string) {
 		if err != nil {
 			log.Fatalf("failed to parse tree: %v", err)
 		}
-	}else {
+	} else {
 		oldEntries = make(map[string]TreeEntry)
 	}
 
@@ -139,29 +139,29 @@ func diffAndApply(repoRoot string, newTreeSha string, oldTreeSha string) {
 			}
 			if newEntry.Mode == "040000" {
 				restoreFullTree(repoRoot, newEntry.SHA, fullPath)
-			}else {
+			} else {
 				restoreFile(repoRoot, newEntry.SHA, fullPath)
 			}
-		}else {
+		} else {
 			if newEntry.Mode == "040000" {
 				if err := os.MkdirAll(fullPath, 0755); err != nil {
 					log.Fatalf("failed to create directory: %v", err)
 				}
 				restoreFullTree(repoRoot, newEntry.SHA, fullPath)
-			}else {
+			} else {
 				restoreFile(repoRoot, newEntry.SHA, fullPath)
 			}
 		}
 	}
-	
+
 	fmt.Println(oldEntries, newEntries)
 }
 
-func switchBranch(repoRoot string, newBranchPath string, currentBranch string) { 
+func switchBranch(repoRoot string, newBranchPath string, currentBranch string) {
 	content, err := os.ReadFile(newBranchPath)
 	if err != nil {
 		log.Fatalf("failed to read branch: %v", err)
-	}	
+	}
 	contentStr := string(content)
 	contentStr = strings.TrimSpace(contentStr)
 	currentBranchContent, err := os.ReadFile(filepath.Join(repoRoot, common.RootDir, common.RefsDir, common.HeadDir, currentBranch))
@@ -209,34 +209,34 @@ func buildIndexFromTree(repoRoot string, treeSha string, prefix string) (common.
 	if err != nil {
 		return nil, fmt.Errorf("failed to read tree object: %w", err)
 	}
-	
+
 	i := 0
 	for i < len(treeData) {
 		spaceIndex := bytes.IndexByte(treeData[i:], ' ') // finding space between mode and file name
 		if spaceIndex == -1 {
 			break
 		}
-		mode := string(treeData[i : i + spaceIndex]) // getting mode
+		mode := string(treeData[i : i+spaceIndex]) // getting mode
 		fileNamStart := i + spaceIndex + 1
-		
+
 		nullIndex := bytes.IndexByte(treeData[fileNamStart:], '\x00')
 		if nullIndex == -1 {
 			break
 		}
 		fullNullIndex := fileNamStart + nullIndex
-		fileName := string(treeData[fileNamStart : fullNullIndex])
+		fileName := string(treeData[fileNamStart:fullNullIndex])
 		shaStart := fullNullIndex + 1
 		shaEnd := shaStart + 20
-		sha := treeData[shaStart : shaEnd]
+		sha := treeData[shaStart:shaEnd]
 		shaHex := hex.EncodeToString(sha)
-		
+
 		var filePath string
 		if prefix == "" {
 			filePath = fileName
 		} else {
 			filePath = filepath.ToSlash(filepath.Join(prefix, fileName))
 		}
-		
+
 		if mode == "040000" {
 			// It's a directory, recurse into it
 			subIndex, err := buildIndexFromTree(repoRoot, shaHex, filePath)
@@ -251,10 +251,10 @@ func buildIndexFromTree(repoRoot string, treeSha string, prefix string) (common.
 			// It's a file, add it to the index
 			index[filePath] = shaHex
 		}
-		
+
 		i = shaEnd
 	}
-	
+
 	return index, nil
 }
 
@@ -275,7 +275,7 @@ func CheckoutCommand(cmd *cobra.Command, args []string) {
 		log.Fatalf("branch %s does not exist", branchName)
 	}
 	switchBranch(repoPath, branchPath, currentBranch)
-	
+
 	branchContent, err := os.ReadFile(branchPath)
 	if err != nil {
 		log.Fatalf("failed to read branch: %v", err)
@@ -290,12 +290,12 @@ func CheckoutCommand(cmd *cobra.Command, args []string) {
 		treeSha := strings.Split(commitStr, "\n")[0]
 		treeSha = strings.Split(treeSha, " ")[1]
 		treeSha = strings.TrimSpace(treeSha)
-		
+
 		newIndex, err := buildIndexFromTree(repoPath, treeSha, "")
 		if err != nil {
 			log.Fatalf("failed to build index from tree: %v", err)
 		}
-		
+
 		indexBytes, err := json.MarshalIndent(newIndex, "", "  ")
 		if err != nil {
 			log.Fatalf("failed to marshal index: %v", err)
@@ -316,8 +316,8 @@ func CheckoutCommand(cmd *cobra.Command, args []string) {
 			log.Fatalf("failed to write index: %v", err)
 		}
 	}
-	
-	err = os.WriteFile(filepath.Join(repoPath, common.RootDir, common.HEAD), []byte("ref: refs/heads/" + branchName), 0644)
+
+	err = os.WriteFile(filepath.Join(repoPath, common.RootDir, common.HEAD), []byte("ref: refs/heads/"+branchName), 0644)
 	if err != nil {
 		log.Fatalf("failed to update head: %v", err)
 	}
