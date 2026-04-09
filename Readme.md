@@ -75,20 +75,28 @@ mini-git checkout feature-branch
 
 ### Merge
 
-The `merge` command combines changes from one branch into the current branch. Currently, it supports **fast-forward merges** only. The implementation (see `commands/merge.go`) works as follows:
+The `merge` command combines changes from another branch into the branch you have checked out. The implementation lives in `commands/merge.go` and takes one of two paths.
 
-When you merge a branch, it first checks if the current branch is an ancestor of the branch being merged. If it is, a fast-forward merge is performed:
+**Fast-forward** (your current commit is an ancestor of the branch you merge):
 
-1. **Ancestor Check**: Uses the `isAncestor` function to traverse the commit history and determine if the current branch's commit is an ancestor of the branch being merged
-2. **Branch Update**: Updates the current branch reference to point to the merged branch's commit
-3. **Working Directory Update**: Uses `diffAndApply` to compare tree objects and update files in your working directory:
-   - Files that changed get updated
-   - New files from the merged branch get created
-   - Files removed in the merged branch get deleted
-   - Unchanged files remain untouched
-4. **Index Update**: Rebuilds the index from the merged branch's tree using `buildIndexFromTree` to reflect the new state
+1. **Ancestor check**: `isAncestor` walks history to see if the current branch tip is reachable from the branch being merged.
+2. **Branch ref**: The current branch ref is updated to the merged branch’s commit.
+3. **Working tree**: `diffAndApply` compares the old and new trees and updates the working directory (adds, updates, and removes files as needed).
+4. **Index**: The index is rebuilt from the merged commit’s tree with `buildIndexFromTree` (or cleared if the tip has no commit).
 
-If you try to merge the branch you're already on, it will inform you that you're already on that branch. If the merge requires a 3-way merge (when branches have diverged), it will report that 3-way merges are not yet implemented.
+**Three-way merge** (the histories have diverged):
+
+1. **Merge base**: `findMergeBase` collects all ancestors of the current branch, then walks from the incoming branch’s tip until it hits the first commit that also appears on the current line—same idea as Git’s merge-base for this simple history.
+2. **Trees**: `buildTreeFromCommit` flattens the merge base, incoming branch, and current branch into path → blob hash maps.
+3. **Per-file rules** (compare base, current “head”, and incoming “target” blobs):
+   - Head and target have the same non-empty blob hash → keep that blob.
+   - Head matches base, target differs → take target’s change.
+   - Base and target agree, head differs → keep head’s change.
+   - Anything else → conflict.
+4. **Conflicts**: If any path conflicts, merge stops after printing which files conflicted. The repository is left unchanged in that case (no merge commit, no partial write).
+5. **Success**: Files present only on the old head but not in the result are removed from disk. Resolved blobs are written, the index is updated, a new **merge commit** is created with both parents (current and merged branch), and HEAD is advanced to that commit.
+
+If you merge the branch you are already on, it tells you and does nothing.
 
 Example usage:
 
@@ -107,8 +115,4 @@ mini-git merge feature-branch
 - **Branch References**: Branch reference system with HEAD tracking that updates on each commit
 - **Branch Management**: Create and list branches, with automatic switching on creation
 - **Checkout**: Switch between branches with intelligent working directory updates
-- **Merge**: Fast-forward merge support that combines branches when the current branch is an ancestor of the merged branch
-
-## What's Next
-
-I'm planning to add `status` and `log` commands next.
+- **Merge**: Fast-forward merges when applicable, plus automatic three-way merges with conflict listing when histories diverge
